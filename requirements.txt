@@ -1,0 +1,14 @@
+fastapi
+uvicorn
+python-json-logger
+python-multipart
+opencv-python
+ultralytics
+numpy
+psycopg2-binary
+sqlalchemy
+bcrypt
+insightface
+onnxruntime
+python-dotenv
+itsdangerous

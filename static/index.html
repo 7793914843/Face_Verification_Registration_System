@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-950 text-slate-100 selection:bg-indigo-500 selection:text-white">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aegis Biometrics - Identity & Verification Platform</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap"
+        rel="stylesheet">
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Outfit', 'sans-serif'],
+                        mono: ['Fira Code', 'monospace'],
+                    },
+                    colors: {
+                        brand: {
+                            purple: '#8a2be2',
+                            cyan: '#00f0ff',
+                            success: '#00ffaa',
+                            error: '#ff3366',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .glow-orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(130px);
+            z-index: -10;
+            pointer-events: none;
+            opacity: 0.45;
+        }
+
+        @keyframes scan {
+
+            0%,
+            100% {
+                top: 0%;
+            }
+
+            50% {
+                top: 100%;
+            }
+        }
+
+        .scan-line {
+            animation: scan 4s linear infinite;
+        }
+
+        /* Custom scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(138, 43, 226, 0.4);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(138, 43, 226, 0.7);
+        }
+    </style>
+</head>
+
+<body class="relative min-h-full font-sans overflow-x-hidden flex flex-col justify-between">
+    <!-- Background glowing decorative elements -->
+    <div class="glow-orb w-[500px] h-[500px] bg-indigo-600/40 -top-40 -left-40"></div>
+    <div class="glow-orb w-[600px] h-[600px] bg-purple-900/30 -bottom-40 -right-40"></div>
+
+    <!-- Main Container -->
+    <div class="w-full max-w-6xl mx-auto px-4 md:px-6 flex flex-col min-h-screen">
+
+        <!-- Header -->
+        <header class="flex justify-between items-center py-6 border-b border-slate-800/80 backdrop-blur-sm z-10">
+            <div class="flex items-center space-x-3">
+                <span class="text-3xl filter drop-shadow-[0_0_12px_rgba(138,43,226,0.5)]">🛡️</span>
+                <h1 class="text-2xl font-bold tracking-tight text-white">
+                    Face<span
+                        class="bg-gradient-to-r from-brand-cyan to-brand-purple bg-clip-text text-transparent">Verification</span>
+                </h1>
+            </div>
+            <!-- Logged-in session status -->
+            <div id="userStatusHeader" class="hidden items-center space-x-4">
+                <span id="activeUsername"
+                    class="text-sm font-medium text-brand-cyan bg-brand-cyan/10 border border-brand-cyan/20 px-3.5 py-1 rounded-full">
+                    Guest
+                </span>
+                <button id="logoutBtn"
+                    class="text-xs font-semibold text-brand-error hover:bg-brand-error/10 border border-brand-error/30 hover:border-brand-error/60 px-4 py-1.5 rounded-lg transition-all duration-300">
+                    Logout
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Workspace -->
+        <main class="flex-1 flex items-center justify-center py-10 z-10">
+
+            <!-- 1. AUTHENTICATION PANEL (Sign Up / Log In) -->
+            <section id="authPanel"
+                class="w-full max-w-4xl bg-slate-900/70 border border-slate-850 backdrop-blur-xl shadow-2xl rounded-3xl overflow-hidden transition-all duration-500">
+                <!-- Tabs -->
+                <div class="flex border-b border-slate-800 bg-slate-950/40">
+                    <button id="tabSignUp"
+                        class="flex-1 py-4 text-center font-semibold text-brand-cyan border-b-2 border-brand-cyan bg-brand-cyan/5 transition-all duration-300">
+                        Sign Up
+                    </button>
+                    <button id="tabLogIn"
+                        class="flex-1 py-4 text-center font-semibold text-slate-400 border-b-2 border-transparent hover:text-slate-200 hover:bg-slate-900/20 transition-all duration-300">
+                        Log In
+                    </button>
+                </div>
+
+                <!-- SIGN UP FORM -->
+                <div id="signUpForm" class="p-6 md:p-8 block animate-fade">
+                    <div class="mb-6">
+                        <h2 class="text-xl font-bold text-white mb-1">Create Secure Account</h2>
+                        <p class="text-sm text-slate-400">Register with a unique username, secure password, and facial
+                            credential.</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <!-- Input Fields -->
+                        <div class="space-y-5">
+                            <div class="flex flex-col space-y-2">
+                                <label for="regUsername"
+                                    class="text-xs font-semibold tracking-wider text-slate-400 uppercase">Username</label>
+                                <input type="text" id="regUsername" placeholder="Enter username" autocomplete="off"
+                                    class="bg-slate-950/70 border border-slate-800 focus:border-brand-purple focus:ring-1 focus:ring-brand-purple rounded-xl px-4 py-3 text-slate-100 outline-none transition-all duration-300">
+                            </div>
+                            <div class="flex flex-col space-y-2">
+                                <label for="regPassword"
+                                    class="text-xs font-semibold tracking-wider text-slate-400 uppercase">Password</label>
+                                <input type="password" id="regPassword" placeholder="Enter secure password"
+                                    class="bg-slate-950/70 border border-slate-800 focus:border-brand-purple focus:ring-1 focus:ring-brand-purple rounded-xl px-4 py-3 text-slate-100 outline-none transition-all duration-300">
+                            </div>
+                            <div class="flex flex-col space-y-2">
+                                <label for="regConfirmPassword"
+                                    class="text-xs font-semibold tracking-wider text-slate-400 uppercase">Confirm
+                                    Password</label>
+                                <input type="password" id="regConfirmPassword" placeholder="Confirm secure password"
+                                    class="bg-slate-950/70 border border-slate-800 focus:border-brand-purple focus:ring-1 focus:ring-brand-purple rounded-xl px-4 py-3 text-slate-100 outline-none transition-all duration-300">
+                            </div>
+                        </div>
+
+                        <!-- Face Credential Selection -->
+                        <div class="flex flex-col">
+                            <label class="text-xs font-semibold tracking-wider text-slate-400 uppercase mb-2">Facial
+                                Credential Input</label>
+
+                            <!-- Media Toggle -->
+                            <div class="flex bg-slate-950 p-1 rounded-xl border border-slate-800 mb-4">
+                                <button type="button" id="btnToggleRegWebcam"
+                                    class="flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all duration-300 bg-indigo-600 text-white">
+                                    Webcam Capture
+                                </button>
+                                <button type="button" id="btnToggleRegUpload"
+                                    class="flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all duration-300 text-slate-400 hover:text-slate-200">
+                                    Upload Image
+                                </button>
+                            </div>
+
+                            <!-- Capture Container -->
+                            <div id="regCameraContainer"
+                                class="relative w-full aspect-[4/3] bg-black border border-slate-800 rounded-2xl overflow-hidden shadow-inner flex flex-col justify-between">
+                                <video id="regVideo" class="w-full h-full object-cover" autoplay playsinline
+                                    muted></video>
+                                <canvas id="regCanvas" class="hidden"></canvas>
+
+                                <!-- Scanner Overlay HUD -->
+                                <div class="absolute inset-0 pointer-events-none">
+                                    <div
+                                        class="scan-line absolute w-full h-[2px] bg-gradient-to-r from-transparent via-brand-cyan to-transparent shadow-[0_0_8px_#00f0ff]">
+                                    </div>
+                                    <div class="absolute w-5 h-5 border-l-2 border-t-2 border-brand-cyan top-4 left-4">
+                                    </div>
+                                    <div class="absolute w-5 h-5 border-r-2 border-t-2 border-brand-cyan top-4 right-4">
+                                    </div>
+                                    <div
+                                        class="absolute w-5 h-5 border-l-2 border-b-2 border-brand-cyan bottom-4 left-4">
+                                    </div>
+                                    <div
+                                        class="absolute w-5 h-5 border-r-2 border-b-2 border-brand-cyan bottom-4 right-4">
+                                    </div>
+                                </div>
+
+                                <div id="regCameraFallback"
+                                    class="absolute inset-0 bg-slate-950 flex items-center justify-center text-xs text-slate-500 font-medium z-10 hidden">
+                                    <span>Webcam is Offline</span>
+                                </div>
+                            </div>
+
+                            <!-- Upload Container (Hidden by default) -->
+                            <div id="regUploadContainer"
+                                class="hidden w-full aspect-[4/3] bg-slate-950 border border-dashed border-slate-800 rounded-2xl overflow-hidden shadow-inner flex flex-col items-center justify-center p-4">
+                                <div id="regUploadPrompt"
+                                    class="text-center cursor-pointer hover:opacity-80 transition-opacity">
+                                    <span class="text-3xl mb-2 block">📁</span>
+                                    <p class="text-xs text-slate-400 font-semibold mb-1">Click to select image file</p>
+                                    <p class="text-[10px] text-slate-600">Supports JPG, PNG (Max 5MB)</p>
+                                    <input type="file" id="regFileInput" class="hidden" accept="image/*">
+                                </div>
+                                <div id="regUploadPreviewContainer" class="hidden w-full h-full relative">
+                                    <img id="regUploadPreview" class="w-full h-full object-contain" src=""
+                                        alt="Preview">
+                                    <button type="button" id="btnRemoveRegUpload"
+                                        class="absolute top-2 right-2 bg-slate-900/80 hover:bg-slate-900 border border-slate-700 text-[10px] px-2 py-1 rounded text-slate-300">
+                                        Change Image
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Register Action button -->
+                    <div class="mt-8 flex flex-col space-y-4">
+                        <button id="btnSubmitRegister"
+                            class="w-full bg-gradient-to-r from-brand-purple to-indigo-600 hover:opacity-90 active:scale-[0.99] shadow-lg shadow-brand-purple/20 text-white font-semibold py-3.5 rounded-xl transition-all duration-300">
+                            Register & Create Account
+                        </button>
+                        <div id="regStatus" class="hidden text-sm px-4 py-3 rounded-xl"></div>
+                    </div>
+                </div>
+
+                <!-- LOG IN FORM -->
+                <div id="logInForm" class="p-6 md:p-8 hidden animate-fade">
+                    <div class="mb-6">
+                        <h2 class="text-xl font-bold text-white mb-1">Welcome Back</h2>
+                        <p class="text-sm text-slate-400">Sign in to your biometric workspace using your registered
+                            credentials.</p>
+                    </div>
+
+                    <div class="max-w-md mx-auto space-y-5">
+                        <div class="flex flex-col space-y-2">
+                            <label for="loginUsername"
+                                class="text-xs font-semibold tracking-wider text-slate-400 uppercase">Username</label>
+                            <input type="text" id="loginUsername" placeholder="Enter your username" autocomplete="off"
+                                class="bg-slate-950/70 border border-slate-800 focus:border-brand-purple focus:ring-1 focus:ring-brand-purple rounded-xl px-4 py-3 text-slate-100 outline-none transition-all duration-300">
+                        </div>
+                        <div class="flex flex-col space-y-2">
+                            <label for="loginPassword"
+                                class="text-xs font-semibold tracking-wider text-slate-400 uppercase">Password</label>
+                            <input type="password" id="loginPassword" placeholder="Enter your password"
+                                class="bg-slate-950/70 border border-slate-800 focus:border-brand-purple focus:ring-1 focus:ring-brand-purple rounded-xl px-4 py-3 text-slate-100 outline-none transition-all duration-300">
+                        </div>
+                        <button id="btnSubmitLogin"
+                            class="w-full bg-gradient-to-r from-indigo-600 to-indigo-700 hover:opacity-90 active:scale-[0.99] shadow-lg text-white font-semibold py-3.5 rounded-xl transition-all duration-300">
+                            Log In
+                        </button>
+                        <div id="loginStatus" class="hidden text-sm px-4 py-3 rounded-xl"></div>
+                    </div>
+                </div>
+            </section>
+
+
+            <!-- 2. DASHBOARD PANEL (Accessible post-login) -->
+            <section id="dashboardPanel"
+                class="hidden w-full bg-slate-900/60 border border-slate-800/80 backdrop-blur-xl shadow-2xl rounded-3xl overflow-hidden grid grid-cols-1 md:grid-cols-[260px_1fr] min-h-[600px]">
+
+                <!-- Sidebar -->
+                <div class="bg-slate-950/50 border-r border-slate-850 p-6 flex flex-col justify-between">
+                    <div class="space-y-8">
+                        <!-- User Identity HUD info -->
+                        <div class="flex flex-col items-center text-center space-y-3 pb-6 border-b border-slate-850">
+                            <div
+                                class="w-14 h-14 rounded-full bg-gradient-to-tr from-brand-purple to-brand-cyan flex items-center justify-center text-2xl shadow-lg shadow-brand-purple/20">
+                                👤
+                            </div>
+                            <div>
+                                <h3 id="sidebarUsername" class="text-base font-semibold text-white">Guest</h3>
+                                <p class="text-[10px] tracking-widest text-brand-cyan uppercase font-bold mt-0.5">
+                                    Session Secured</p>
+                            </div>
+                        </div>
+
+                        <!-- Sidebar Nav -->
+                        <nav class="flex flex-col space-y-1">
+                            <button
+                                class="nav-item flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-300 bg-brand-purple text-white shadow-md shadow-brand-purple/15"
+                                data-module="faceVerification">
+                                <span class="text-base">🛡️</span> <span>Face Verification</span>
+                            </button>
+                            <button
+                                class="nav-item flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-300 text-slate-400 hover:text-slate-200 hover:bg-slate-800/30"
+                                data-module="faceIdentification">
+                                <span class="text-base">👥</span> <span>Face Identification</span>
+                            </button>
+                            <button
+                                class="nav-item flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-300 text-slate-400 hover:text-slate-200 hover:bg-slate-800/30"
+                                data-module="bodyIdentification">
+                                <span class="text-base">🧍</span> <span>Body Identification</span>
+                            </button>
+                            <button
+                                class="nav-item flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-300 text-slate-400 hover:text-slate-200 hover:bg-slate-800/30"
+                                data-module="imageResizing">
+                                <span class="text-base">📐</span> <span>Image Resizing</span>
+                            </button>
+                        </nav>
+                    </div>
+
+                    <div class="text-[10px] text-slate-500 text-center">
+                        Aegis Security Engine v1.0.0
+                    </div>
+                </div>
+
+                <!-- Dashboard Content Area -->
+                <div class="p-6 md:p-8 overflow-y-auto">
+
+                    <!-- MODULE 1: FACE VERIFICATION -->
+                    <div id="modFaceVerification" class="module-view block space-y-6">
+                        <div>
+                            <h2 class="text-xl font-bold text-white mb-1">Face Verification</h2>
+                            <p class="text-sm text-slate-400">Match biometric signatures against all registered
+                                templates to identify the matched identity and matching confidence details.</p>
+                        </div>
+
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                            <!-- Left: Camera/Upload interface -->
+                            <div class="space-y-4">
+                                <div class="flex bg-slate-950 p-1 rounded-xl border border-slate-850">
+                                    <button type="button" id="btnToggleVerifyWebcam"
+                                        class="flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all duration-300 bg-indigo-600 text-white">
+                                        Webcam Capture
+                                    </button>
+                                    <button type="button" id="btnToggleVerifyUpload"
+                                        class="flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all duration-300 text-slate-400 hover:text-slate-200">
+                                        Upload Image
+                                    </button>
+                                </div>
+
+                                <!-- Webcam container -->
+                                <div id="verifyCameraContainer"
+                                    class="relative w-full aspect-[4/3] bg-black border border-slate-800 rounded-2xl overflow-hidden shadow-inner flex flex-col justify-between">
+                                    <video id="verifyVideo" class="w-full h-full object-cover" autoplay playsinline
+                                        muted></video>
+                                    <canvas id="verifyCanvas" class="hidden"></canvas>
+                                    <div class="absolute inset-0 pointer-events-none">
+                                        <div
+                                            class="scan-line absolute w-full h-[2px] bg-gradient-to-r from-transparent via-brand-purple to-transparent shadow-[0_0_8px_rgba(138,43,226,0.6)]">
+                                        </div>
+                                    </div>
+                                    <div id="verifyCameraFallback"
+                                        class="absolute inset-0 bg-slate-950 flex items-center justify-center text-xs text-slate-500 font-medium z-10 hidden">
+                                        <span>Webcam is Offline</span>
+                                    </div>
+                                </div>
+
+                                <!-- Upload container -->
+                                <div id="verifyUploadContainer"
+                                    class="hidden w-full aspect-[4/3] bg-slate-950 border border-dashed border-slate-805 rounded-2xl overflow-hidden shadow-inner flex flex-col items-center justify-center p-4">
+                                    <div id="verifyUploadPrompt"
+                                        class="text-center cursor-pointer hover:opacity-80 transition-opacity">
+                                        <span class="text-3xl mb-2 block">📁</span>
+                                        <p class="text-xs text-slate-400 font-semibold mb-1">Click to select image file
+                                        </p>
+                                        <input type="file" id="verifyFileInput" class="hidden" accept="image/*">
+                                    </div>
+                                    <div id="verifyUploadPreviewContainer" class="hidden w-full h-full relative">
+                                        <img id="verifyUploadPreview" class="w-full h-full object-contain" src=""
+                                            alt="Preview">
+                                        <button type="button" id="btnRemoveVerifyUpload"
+                                            class="absolute top-2 right-2 bg-slate-900/80 border border-slate-700 text-[10px] px-2 py-1 rounded text-slate-300">
+                                            Change Image
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <button id="btnSubmitVerify"
+                                    class="w-full bg-brand-purple hover:bg-brand-purple/90 active:scale-[0.99] text-white font-semibold py-3 rounded-xl transition-all">
+                                    Verify Biometrics
+                                </button>
+                            </div>
+
+                            <!-- Right: Verification Results -->
+                            <div
+                                class="bg-slate-950/40 border border-slate-850 rounded-2xl p-6 flex flex-col justify-between">
+                                <h3
+                                    class="text-sm font-semibold tracking-wider text-slate-400 uppercase border-b border-slate-850 pb-3">
+                                    Verification Details</h3>
+                                <div id="verifyResultDisplay"
+                                    class="flex-1 flex flex-col items-center justify-center py-6">
+                                    <p class="text-xs text-slate-500 italic">Submit biometrics to view matching
+                                        status...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- MODULE 2: FACE IDENTIFICATION -->
+                    <div id="modFaceIdentification" class="module-view hidden space-y-6">
+                        <div>
+                            <h2 class="text-xl font-bold text-white mb-1">Face Detection & Crop</h2>
+                            <p class="text-sm text-slate-400">Detect and crop all faces present within the captured
+                                frame or uploaded photo.</p>
+                        </div>
+
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                            <div class="space-y-4">
+                                <div class="flex bg-slate-950 p-1 rounded-xl border border-slate-850">
+                                    <button type="button" id="btnToggleFaceIdWebcam"
+                                        class="flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all duration-300 bg-indigo-600 text-white">
+                                        Webcam Capture
+                                    </button>
+                                    <button type="button" id="btnToggleFaceIdUpload"
+                                        class="flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all duration-300 text-slate-400 hover:text-slate-200">
+                                        Upload Image
+                                    </button>
+                                </div>
+
+                                <div id="faceIdCameraContainer"
+                                    class="relative w-full aspect-[4/3] bg-black border border-slate-800 rounded-2xl overflow-hidden shadow-inner">
+                                    <video id="faceIdVideo" class="w-full h-full object-cover" autoplay playsinline
+                                        muted></video>
+                                    <canvas id="faceIdCanvas" class="hidden"></canvas>
+                                    <div id="faceIdCameraFallback"
+                                        class="absolute inset-0 bg-slate-950 flex items-center justify-center text-xs text-slate-500 font-medium z-10 hidden">
+                                        <span>Webcam is Offline</span>
+                                    </div>
+                                </div>
+
+                                <div id="faceIdUploadContainer"
+                                    class="hidden w-full aspect-[4/3] bg-slate-950 border border-dashed border-slate-805 rounded-2xl overflow-hidden shadow-inner flex flex-col items-center justify-center p-4">
+                                    <div id="faceIdUploadPrompt"
+                                        class="text-center cursor-pointer hover:opacity-80 transition-opacity">
+                                        <span class="text-3xl mb-2 block">📁</span>
+                                        <p class="text-xs text-slate-400 font-semibold mb-1">Click to select image file
+                                        </p>
+                                        <input type="file" id="faceIdFileInput" class="hidden" accept="image/*">
+                                    </div>
+                                    <div id="faceIdUploadPreviewContainer" class="hidden w-full h-full relative">
+                                        <img id="faceIdUploadPreview" class="w-full h-full object-contain" src=""
+                                            alt="Preview">
+                                        <button type="button" id="btnRemoveFaceIdUpload"
+                                            class="absolute top-2 right-2 bg-slate-900/80 border border-slate-700 text-[10px] px-2 py-1 rounded text-slate-300">
+                                            Change Image
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <button id="btnSubmitFaceId"
+                                    class="w-full bg-brand-purple hover:bg-brand-purple/90 active:scale-[0.99] text-white font-semibold py-3 rounded-xl transition-all">
+                                    Detect & Crop Faces
+                                </button>
+                            </div>
+
+                            <div class="bg-slate-950/40 border border-slate-850 rounded-2xl p-6 flex flex-col">
+                                <h3
+                                    class="text-sm font-semibold tracking-wider text-slate-400 uppercase border-b border-slate-850 pb-3 mb-4">
+                                    Cropped Faces</h3>
+                                <div id="faceIdResults" class="flex-1 flex flex-col justify-center space-y-4">
+                                    <p class="text-xs text-slate-500 italic text-center">No faces detected yet...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- MODULE 3: BODY IDENTIFICATION -->
+                    <div id="modBodyIdentification" class="module-view hidden space-y-6">
+                        <div>
+                            <h2 class="text-xl font-bold text-white mb-1">Body Identification</h2>
+                            <p class="text-sm text-slate-400">Detect persons and overlay bounding boxes on the captured
+                                environment.</p>
+                        </div>
+
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                            <div class="space-y-4">
+                                <div class="flex bg-slate-950 p-1 rounded-xl border border-slate-850">
+                                    <button type="button" id="btnToggleBodyIdWebcam"
+                                        class="flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all duration-300 bg-indigo-600 text-white">
+                                        Webcam Capture
+                                    </button>
+                                    <button type="button" id="btnToggleBodyIdUpload"
+                                        class="flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all duration-300 text-slate-400 hover:text-slate-200">
+                                        Upload Image
+                                    </button>
+                                </div>
+
+                                <div id="bodyIdCameraContainer"
+                                    class="relative w-full aspect-[4/3] bg-black border border-slate-800 rounded-2xl overflow-hidden shadow-inner">
+                                    <video id="bodyIdVideo" class="w-full h-full object-cover" autoplay playsinline
+                                        muted></video>
+                                    <canvas id="bodyIdCanvas" class="hidden"></canvas>
+                                    <div id="bodyIdCameraFallback"
+                                        class="absolute inset-0 bg-slate-950 flex items-center justify-center text-xs text-slate-500 font-medium z-10 hidden">
+                                        <span>Webcam is Offline</span>
+                                    </div>
+                                </div>
+
+                                <div id="bodyIdUploadContainer"
+                                    class="hidden w-full aspect-[4/3] bg-slate-950 border border-dashed border-slate-805 rounded-2xl overflow-hidden shadow-inner flex flex-col items-center justify-center p-4">
+                                    <div id="bodyIdUploadPrompt"
+                                        class="text-center cursor-pointer hover:opacity-80 transition-opacity">
+                                        <span class="text-3xl mb-2 block">📁</span>
+                                        <p class="text-xs text-slate-400 font-semibold mb-1">Click to select image file
+                                        </p>
+                                        <input type="file" id="bodyIdFileInput" class="hidden" accept="image/*">
+                                    </div>
+                                    <div id="bodyIdUploadPreviewContainer" class="hidden w-full h-full relative">
+                                        <img id="bodyIdUploadPreview" class="w-full h-full object-contain" src=""
+                                            alt="Preview">
+                                        <button type="button" id="btnRemoveBodyIdUpload"
+                                            class="absolute top-2 right-2 bg-slate-900/80 border border-slate-700 text-[10px] px-2 py-1 rounded text-slate-300">
+                                            Change Image
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <button id="btnSubmitBodyId"
+                                    class="w-full bg-brand-purple hover:bg-brand-purple/90 active:scale-[0.99] text-white font-semibold py-3 rounded-xl transition-all">
+                                    Identify Bodies
+                                </button>
+                            </div>
+
+                            <div
+                                class="bg-slate-950/40 border border-slate-850 rounded-2xl p-6 flex flex-col justify-between">
+                                <h3
+                                    class="text-sm font-semibold tracking-wider text-slate-400 uppercase border-b border-slate-850 pb-3 mb-4">
+                                    Annotated Environment</h3>
+                                <div id="bodyIdResults" class="flex-1 flex flex-col items-center justify-center">
+                                    <p class="text-xs text-slate-500 italic text-center">Submit scene to trace body
+                                        detections...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- MODULE 4: IMAGE RESIZING -->
+                    <div id="modImageResizing" class="module-view hidden space-y-6">
+                        <div>
+                            <h2 class="text-xl font-bold text-white mb-1">Image Resizing</h2>
+                            <p class="text-sm text-slate-400">Capture or upload a photo, adjust custom pixel dimensions,
+                                and download resized image output.</p>
+                        </div>
+
+                        <!-- Guidelines Alert -->
+                        <div
+                            class="bg-indigo-950/30 border border-indigo-900/50 border-l-4 border-l-brand-cyan rounded-xl p-4 text-xs text-indigo-200">
+                            <strong class="text-brand-cyan block font-semibold mb-1">Resize Safety Guideline:</strong>
+                            To maintain image details, the recommended scaling ratio is 50% to 200% of the original
+                            photo. Larger scales will cause pixelation.
+                        </div>
+
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                            <div class="space-y-4">
+                                <div class="flex bg-slate-950 p-1 rounded-xl border border-slate-850">
+                                    <button type="button" id="btnToggleResizeWebcam"
+                                        class="flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all duration-300 bg-indigo-600 text-white">
+                                        Webcam Capture
+                                    </button>
+                                    <button type="button" id="btnToggleResizeUpload"
+                                        class="flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all duration-300 text-slate-400 hover:text-slate-200">
+                                        Upload Image
+                                    </button>
+                                </div>
+
+                                <div id="resizeCameraContainer"
+                                    class="relative w-full aspect-[4/3] bg-black border border-slate-800 rounded-2xl overflow-hidden shadow-inner">
+                                    <video id="resizeVideo" class="w-full h-full object-cover" autoplay playsinline
+                                        muted></video>
+                                    <canvas id="resizeCanvas" class="hidden"></canvas>
+                                    <div id="resizeCameraFallback"
+                                        class="absolute inset-0 bg-slate-950 flex items-center justify-center text-xs text-slate-500 font-medium z-10 hidden">
+                                        <span>Webcam is Offline</span>
+                                    </div>
+                                </div>
+
+                                <div id="resizeUploadContainer"
+                                    class="hidden w-full aspect-[4/3] bg-slate-950 border border-dashed border-slate-805 rounded-2xl overflow-hidden shadow-inner flex flex-col items-center justify-center p-4">
+                                    <div id="resizeUploadPrompt"
+                                        class="text-center cursor-pointer hover:opacity-80 transition-opacity">
+                                        <span class="text-3xl mb-2 block">📁</span>
+                                        <p class="text-xs text-slate-400 font-semibold mb-1">Click to select image file
+                                        </p>
+                                        <input type="file" id="resizeFileInput" class="hidden" accept="image/*">
+                                    </div>
+                                    <div id="resizeUploadPreviewContainer" class="hidden w-full h-full relative">
+                                        <img id="resizeUploadPreview" class="w-full h-full object-contain" src=""
+                                            alt="Preview">
+                                        <button type="button" id="btnRemoveResizeUpload"
+                                            class="absolute top-2 right-2 bg-slate-900/80 border border-slate-700 text-[10px] px-2 py-1 rounded text-slate-300">
+                                            Change Image
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Dimension Inputs -->
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div class="flex flex-col space-y-1.5">
+                                        <label for="resizeWidth"
+                                            class="text-[10px] font-semibold tracking-wider text-slate-400 uppercase">Width
+                                            (px)</label>
+                                        <input type="number" id="resizeWidth" value="320" min="10" max="4000"
+                                            class="bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-lg px-3 py-2 text-xs text-slate-200 outline-none">
+                                    </div>
+                                    <div class="flex flex-col space-y-1.5">
+                                        <label for="resizeHeight"
+                                            class="text-[10px] font-semibold tracking-wider text-slate-400 uppercase">Height
+                                            (px)</label>
+                                        <input type="number" id="resizeHeight" value="240" min="10" max="4000"
+                                            class="bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-lg px-3 py-2 text-xs text-slate-200 outline-none">
+                                    </div>
+                                </div>
+
+                                <button id="btnSubmitResize"
+                                    class="w-full bg-brand-purple hover:bg-brand-purple/90 active:scale-[0.99] text-white font-semibold py-3 rounded-xl transition-all">
+                                    Resize Capture
+                                </button>
+                            </div>
+
+                            <div
+                                class="bg-slate-950/40 border border-slate-850 rounded-2xl p-6 flex flex-col justify-between">
+                                <h3
+                                    class="text-sm font-semibold tracking-wider text-slate-400 uppercase border-b border-slate-850 pb-3 mb-4">
+                                    Output Result</h3>
+                                <div id="resizeResults" class="flex-1 flex flex-col items-center justify-center">
+                                    <p class="text-xs text-slate-500 italic text-center">Resize photo to preview scaled
+                                        output...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+
+        </main>
+
+        <!-- Footer -->
+        <footer class="py-6 border-t border-slate-850/80 text-center text-xs text-slate-500">
+            &copy; 2026 Aegis Security Biometric Platform. All rights reserved.
+        </footer>
+    </div>
+
+    <!-- Script file -->
+    <script src="app.js"></script>
+</body>
+
+</html>
